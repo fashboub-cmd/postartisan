@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 Informations sur l'artisan :
 - Ville : ${profil.ville || 'non précisée'}
 - Téléphone : ${profil.telephone || 'non précisé'}
-- Délai devis : ${profil.delai || 'non précisé'}` : '';
+- Délai pour recevoir un devis : ${profil.delai || 'non précisé'}
 
   const prompt = `Tu es un expert en marketing pour les artisans français. Génère un post Instagram professionnel et engageant pour un(e) ${metier}.
 Ce que l'artisan a réalisé : "${realisation}"
