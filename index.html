@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostArtisan — Générateur de posts Instagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8f4f0; color: #333; }
+    header { background: #2c1810; color: white; padding: 20px; text-align: center; }
+    header h1 { font-size: 1.8rem; }
+    header p { opacity: 0.8; margin-top: 5px; }
+    .container { max-width: 700px; margin: 30px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    h2 { color: #2c1810; margin-bottom: 15px; font-size: 1.1rem; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #555; }
+    input, select, textarea { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; margin-bottom: 15px; }
+    textarea { height: 90px; resize: vertical; }
+    .btn { width: 100%; padding: 14px; background: #e07b39; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #c96a28; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .result { background: #fff8f3; border: 2px solid #e07b39; border-radius: 10px; padding: 20px; display: none; }
+    .result-text { font-size: 1rem; line-height: 1.6; white-space: pre-wrap; }
+    .result-tags { color: #3b82f6; margin-top: 10px; font-size: 0.9rem; }
+    .copy-btn { margin-top: 12px; padding: 8px 20px; background: #2c1810; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+    .counter { text-align: center; color: #888; font-size: 0.85rem; margin-top: 10px; }
+    .posts-left { font-weight: bold; color: #e07b39; }
+    .error { color: #e53e3e; text-align: center; padding: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔨 PostArtisan</h1>
+  <p>Génère des posts Instagram professionnels en 10 secondes</p>
+</header>
+
+<div class="container">
+
+  <!-- Profil artisan -->
+  <div class="card">
+    <h2>👤 Votre profil (remplir une seule fois)</h2>
+    <label>Votre métier</label>
+    <select id="metier">
+      <option value="plombier">Plombier</option>
+      <option value="électricien">Électricien</option>
+      <option value="menuisier">Menuisier</option>
+      <option value="peintre">Peintre</option>
+      <option value="maçon">Maçon</option>
+      <option value="carreleur">Carreleur</option>
+      <option value="couvreur">Couvreur</option>
+      <option value="fleuriste">Fleuriste</option>
+      <option value="boulanger">Boulanger</option>
+      <option value="coiffeur">Coiffeur</option>
+      <option value="autre artisan">Autre</option>
+    </select>
+    <label>Votre ville</label>
+    <input type="text" id="ville" placeholder="ex: Lyon, Bordeaux...">
+    <label>Téléphone (pour le CTA)</label>
+    <input type="text" id="telephone" placeholder="ex: 06 12 34 56 78">
+    <label>Délai devis</label>
+    <input type="text" id="delai" placeholder="ex: sous 24h, gratuit">
+  </div>
+
+  <!-- Génération -->
+  <div class="card">
+    <h2>✍️ Votre réalisation du jour</h2>
+    <label>Décrivez ce que vous venez de faire</label>
+    <textarea id="realisation" placeholder="ex: J'ai refait la salle de bain complète d'une famille à Lyon, pose de carrelage et nouvelle douche italienne..."></textarea>
+    <button class="btn" id="btn-gen" onclick="generer()">🚀 Générer mon post Instagram</button>
+    <div class="counter">Posts restants aujourd'hui : <span class="posts-left" id="compteur">10</span> / 10</div>
+  </div>
+
+  <!-- Résultat -->
+  <div class="result" id="result">
+    <h2>📱 Votre post prêt à publier</h2>
+    <div class="result-text" id="result-text"></div>
+    <div class="result-tags" id="result-tags"></div>
+    <button class="copy-btn" onclick="copier()">📋 Copier le post</button>
+  </div>
+
+</div>
+
+<script>
+  const hashtags = {
+    'plombier': '#plombier #plomberie #artisanfrancais #travaux #rénover',
+    'électricien': '#electricien #electricite #artisanfrancais #travaux',
+    'menuisier': '#menuisier #menuiserie #bois #artisanat #madeinfrance',
+    'peintre': '#peintre #peinture #decoration #artisanfrancais #rénover',
+    'maçon': '#macon #maconnerie #construction #artisanfrancais #travaux',
+    'carreleur': '#carreleur #carrelage #sallesdebain #artisanfrancais',
+    'couvreur': '#couvreur #toiture #artisanfrancais #travaux',
+    'fleuriste': '#fleuriste #fleurs #artisanat #madeinfrance #bouquet',
+    'boulanger': '#boulanger #boulangerie #painartisanal #madeinfrance',
+    'coiffeur': '#coiffeur #coiffure #salon #beaute #artisanfrancais',
+    'autre artisan': '#artisan #artisanat #madeinfrance #savoirfaire'
+  };
+
+  let postsRestants = parseInt(localStorage.getItem('postsRestants') ?? '10');
+  document.getElementById('compteur').textContent = postsRestants;
+
+  async function generer() {
+    if (postsRestants <= 0) {
+      alert('Vous avez utilisé vos 10 posts gratuits. Passez à la version premium pour continuer !');
+      return;
+    }
+
+    const metier = document.getElementById('metier').value;
+    const realisation = document.getElementById('realisation').value.trim();
+    const ville = document.getElementById('ville').value.trim();
+    const telephone = document.getElementById('telephone').value.trim();
+    const delai = document.getElementById('delai').value.trim();
+
+    if (!realisation) {
+      alert('Décrivez votre réalisation avant de générer !');
+      return;
+    }
+
+    const btn = document.getElementById('btn-gen');
+    btn.disabled = true;
+    btn.textContent = '⏳ Génération en cours...';
+    document.getElementById('result').style.display = 'none';
+
+    try {
+      const resp = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          metier,
+          realisation,
+          profil: { ville, telephone, delai }
+        })
+      });
+
+      const data = await resp.json();
+
+      if (data.error) throw new Error(data.error);
+
+      document.getElementById('result-text').textContent = data.post;
+      document.getElementById('result-tags').textContent = hashtags[metier] || '#artisan #france #savoirfaire';
+      document.getElementById('result').style.display = 'block';
+
+      postsRestants--;
+      localStorage.setItem('postsRestants', postsRestants);
+      document.getElementById('compteur').textContent = postsRestants;
+
+    } catch(e) {
+      alert('Erreur lors de la génération. Réessayez.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🚀 Générer mon post Instagram';
+    }
+  }
+
+  function copier() {
+    const texte = document.getElementById('result-text').textContent + '\n\n' + document.getElementById('result-tags').textContent;
+    navigator.clipboard.writeText(texte);
+    alert('Post copié ! Collez-le directement dans Instagram.');
+  }
+</script>
+
+</body>
+</html>
